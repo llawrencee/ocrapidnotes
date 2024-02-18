@@ -10,7 +10,7 @@ import "./css/App.css"
 import ImageUpload from "./components/ImageUpload"
 
 const client = new OpenAI({
-  apiKey: "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",
+  apiKey: process.env.OPEN_AI_API_KEY,
   dangerouslyAllowBrowser: !0,
 })
 
