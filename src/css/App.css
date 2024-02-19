@@ -1,3 +1,15 @@
+.logo{
+  position: fixed;
+  top: 0;
+  width: 15%;
+  height: 12%;
+}
+.logo > img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
 .image-group-container,
 .panel-group-container {
   width: 50%;
@@ -8,7 +20,7 @@
 }
 
 .panel-group-container {
-  height: 100%;
+  height: 76svh;
 }
 
 .image-upload {
@@ -16,8 +28,9 @@
   max-height: 65svh;
   aspect-ratio: 1/1;
 
-  border: 2px solid #ffffffea;
+  border: 1px solid #ffffffea;
   border-radius: 20px;
+  background-color: rgba(255, 255, 255, 0.1);
 
   position: relative;
   cursor: pointer;
@@ -57,23 +70,23 @@
 .image-controls {
   list-style: none;
 
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-row: auto auto;
-  gap: 1rem;
+  display: flex;
+  gap: 0.5rem;
 }
 
 .image-controls > li {
-  width: 100%;
+  width: 50%;
 }
 
 .image-controls > li > button {
   width: 100%;
-  background: none;
+  background-color: #1e1e1e;
+  border: 1px solid #1e1e1e;
 
   padding: 0.75rem 1rem;
-  border: 2px solid #ffffffea;
+  border: none;
   border-radius: 20px;
+  transition: 1s ease;
 
   cursor: pointer;
 }
@@ -83,4 +96,42 @@
   color: gray;
 
   cursor: not-allowed;
+}
+.note-preference:hover{
+  background-color: rgba(49, 131, 213, 0.2);
+  box-shadow: -1px -3px 40px -6px rgba(49, 131, 213, 0.2);
+  -webkit-box-shadow: -1px -3px 40px -6px rgba(49, 131, 213, 0.2);
+  -moz-box-shadow: -1px -3px 40px -6px rgba(49, 131, 213, 0.2);
+}
+.remove-image:not(:disabled):hover{
+  background-color: rgba(236, 86, 87, 0.2);
+  box-shadow: -1px -3px 40px -6px rgba(236, 86, 87, 0.2);
+  -webkit-box-shadow: -1px -3px 40px -6px rgba(236, 86, 87, 0.2);
+  -moz-box-shadow: -1px -3px 40px -6px rgba(236, 86, 87, 0.2);
+}
+.scan:not(:disabled):hover{
+  background-color: rgba(201, 64, 201, 0.2);
+}
+.turn-into-notes:not(:disabled):hover{
+  background-color: rgba(65, 201, 76, 0.2);
+}
+.scanned-text{
+  width: 100%;
+  height: 86%;
+  border: 1px solid #ffffffea;
+  padding: 1rem;
+  border-radius: 20px;
+}
+.progress{
+  width: 50%;
+  height: 8%;
+  padding: 0.5rem 1rem;
+  border: 1px solid #ffffffea;
+  border-radius: 20px ;
+}
+.progress-title{
+  margin-right: 0.5rem;
+}
+.progress-stats{
+  color:#41c94c
 }

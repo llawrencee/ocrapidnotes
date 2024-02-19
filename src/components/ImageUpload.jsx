@@ -85,24 +85,25 @@ function ImageUpload({ scan_function, organize_function, organize_ready }) {
 
       <ul className="image-controls">
         <li>
-          <button onClick={control.preference.click_handler}>
+          <button onClick={control.preference.click_handler} className="note-preference">
             Set Note Preference
           </button>
         </li>
         <li>
-          <button onClick={control.remove.click_handler} disabled={r_disabled}>
+          <button onClick={control.remove.click_handler} disabled={r_disabled} className="remove-image">
             Remove Image
           </button>
         </li>
         <li>
-          <button onClick={control.scan.click_handler} disabled={s_disabled}>
+          <button onClick={control.scan.click_handler} disabled={s_disabled} className="scan">
             Scan
           </button>
         </li>
         <li>
           <button
             onClick={control.organize.click_handler}
-            disabled={organize_ready}>
+            disabled={organize_ready}
+            className="turn-into-notes">
             Turn Into Notes
           </button>
         </li>

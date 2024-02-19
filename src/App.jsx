@@ -10,7 +10,7 @@ import "./css/App.css"
 import ImageUpload from "./components/ImageUpload"
 
 const client = new OpenAI({
-  apiKey: process.env.OPEN_AI_API_KEY,
+  apiKey: null,
   dangerouslyAllowBrowser: !0,
 })
 
@@ -72,6 +72,9 @@ function App() {
 
   return (
     <>
+    <div className="logo">
+      <img src="/src/img/OCRapidNotes.png"></img>
+    </div>
       <div className="image-group-container">
         <ImageUpload
           scan_function={functions.scan}
@@ -79,12 +82,20 @@ function App() {
           organize_ready={ready}></ImageUpload>
       </div>
       <div className="panel-group-container">
-        <p>
-          {status} - {progress}
-        </p>
+        <div className="scanned-text">
         <pre style={{ whiteSpace: "pre-wrap", wordWrap: "break-word" }}>
+          Notes:<br></br>
           {text}
         </pre>
+        </div>
+        <div className="progress">
+        <span className="progress-title">
+          Progress: 
+        </span>
+        <span className="progress-stats">
+           {status} - {progress}
+        </span>
+        </div>
       </div>
     </>
   )
