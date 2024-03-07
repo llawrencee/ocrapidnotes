@@ -8,7 +8,7 @@ const app = express()
 const port = process.env.PORT || 3000
 
 const client = new OpenAI({
-  apiKey: "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",
+  apiKey: "I never learnt my damn lesson",
 })
 
 app.use(cors())
