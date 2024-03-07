@@ -1,28 +1,38 @@
 {
-  "name": "ocreact",
+  "name": "ocreact-bootstrap",
   "private": true,
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "devClient": "vite",
+    "devServer": "nodemon ./server/server.cjs",
     "build": "vite build",
     "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview"
   },
   "dependencies": {
-    "openai": "^4.28.0",
+    "axios": "^1.6.7",
+    "bootstrap": "^5.3.3",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "express-async-handler": "^1.2.0",
+    "express-fileupload": "^1.4.3",
+    "install": "^0.13.0",
+    "openai": "^4.28.4",
     "react": "^18.2.0",
+    "react-bootstrap": "^2.10.1",
     "react-dom": "^18.2.0",
     "tesseract.js": "^5.0.4"
   },
   "devDependencies": {
-    "@types/react": "^18.2.55",
+    "@types/react": "^18.2.56",
     "@types/react-dom": "^18.2.19",
     "@vitejs/plugin-react": "^4.2.1",
     "eslint": "^8.56.0",
     "eslint-plugin-react": "^7.33.2",
     "eslint-plugin-react-hooks": "^4.6.0",
     "eslint-plugin-react-refresh": "^0.4.5",
-    "vite": "^5.1.0"
+    "nodemon": "^3.0.3",
+    "vite": "^5.1.4"
   }
 }
