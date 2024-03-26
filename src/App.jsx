@@ -18,7 +18,9 @@ const server_url = "http://localhost:3000/"
 function content_skeleton(amount) {
   let _placeholders = []
   for (let i = 0; i < amount; i++) {
-    _placeholders.push(<Placeholder xs={Math.floor(Math.random() * 4) + 1} />)
+    _placeholders.push(
+      <Placeholder xs={Math.floor(Math.random() * 4) + 1} key={i} />
+    )
     _placeholders.push(" ")
   }
 
@@ -92,7 +94,6 @@ function App() {
           this.input.element.current.value = ""
           return
         }
-        console.log("[i] Uploading Image:", _url.name)
         this.image.file = _url
         set_file({
           file: _url,
@@ -101,13 +102,11 @@ function App() {
           file_type: _url.type,
           modified_date: _url.lastModifiedDate,
         })
-        console.log("[i] Stored Image:", _url)
         this.label.element.current.style.display = "none"
         this.image.element.current.src = URL.createObjectURL(_url)
         this.image.element.current.style.display = "block"
       },
       remove_handler: () => {
-        console.log("[i] Removing Image:", file)
         upload.input.element.current.value = ""
         set_file({
           file: null,
@@ -181,6 +180,7 @@ function App() {
         const _t1 = Date.now()
         const data = new FormData()
         data.append("filename", file.file_name)
+        data.append("type", "tesseract")
         axios
           .post(server_url + "scan/", data)
           .then((res) => {
@@ -192,6 +192,7 @@ function App() {
                 data: res.data,
               },
             })
+            console.log(res)
           })
           .catch((error) => {
             set_server_response({
@@ -211,7 +212,89 @@ function App() {
           })
       },
       gvapi_handler: () => {
-        // hi skybrother
+        set_notification({
+          active: true,
+          type: "info",
+          title: "Google Vision API",
+          message: "Extracting text using <Google Vision API>. Please wait...",
+        })
+        const _t1 = Date.now()
+        const data = new FormData()
+        data.append("filename", file.file_name)
+        data.append("type", "gvapi")
+        axios
+          .post(server_url + "scan/", data)
+          .then((res) => {
+            set_server_response({
+              ...server_response,
+              scan: {
+                status_text: res.statusText,
+                time_taken: Date.now() - _t1,
+                data: res.data
+                  .map((text) => text.description)
+                  .join(" ")
+                  .replace(/[\r\n]+/gm, " "),
+              },
+            })
+            console.log(res)
+          })
+          .catch((error) => {
+            set_server_response({
+              ...server_response,
+              scan: {
+                status_text: error.response.statusText,
+                time_taken: Date.now() - _t1,
+                data: "",
+              },
+            })
+            set_notification({
+              active: true,
+              type: "error",
+              title: error.response.statusText,
+              message: error.message,
+            })
+          })
+      },
+      pocr_handler: () => {
+        set_notification({
+          active: true,
+          type: "info",
+          title: "PaddleOCR",
+          message: "Extracting text using <PaddleOCR>. Please wait...",
+        })
+        const _t1 = Date.now()
+        const data = new FormData()
+        data.append("filename", file.file_name)
+        data.append("type", "pocr")
+        axios
+          .post(server_url + "scan/", data)
+          .then((res) => {
+            set_server_response({
+              ...server_response,
+              scan: {
+                status_text: res.statusText,
+                time_taken: Date.now() - _t1,
+                data: res.data,
+              },
+            })
+            console.log(res)
+          })
+          .catch((error) => {
+            set_server_response({
+              ...server_response,
+              scan: {
+                status_text: error.response.statusText,
+                time_taken: Date.now() - _t1,
+                data: "",
+              },
+            })
+            set_notification({
+              active: true,
+              type: "error",
+              title: error.response.statusText,
+              message: error.message,
+            })
+          })
       },
     }
   })()
@@ -487,8 +570,8 @@ function App() {
                       <Form.Select
                         size="sm"
                         onChange={scan.select.change_handler}>
-                        <option value="tesseract">Tesseract</option>
                         <option value="gvapi">Google Vision API</option>
+                        <option value="tesseract">Tesseract</option>
                         <option value="pocr">PaddleOCR</option>
                       </Form.Select>
                     </li>
@@ -544,7 +627,7 @@ function App() {
                         Extract Text
                       </Button>
                     ) : ocr == "pocr" ? (
-                      <Button onClick={() => console.log("empty")}>
+                      <Button onClick={scan.functions.pocr_handler}>
                         Extract Text
                       </Button>
                     ) : (
