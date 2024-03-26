@@ -1,0 +1,177 @@
+* {
+  font-family: "DM Sans", sans-serif;
+}
+.logo{
+  position: fixed;
+  top: 0;
+  width: 15%;
+  height: 12%;
+}
+.logo > img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-group-container{
+  width: 70%;
+  height: 80%;
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 2rem;
+}
+.panel-group-container{
+  width: 50%;
+  height: 80%;
+}
+
+.image-upload {
+  width: 80%;
+  max-height: 65svh;
+  aspect-ratio: 1/1;
+
+  border: 1px solid #ffffffea;
+  border-radius: 20px;
+
+  position: relative;
+  cursor: pointer;
+}
+.buttons{
+  font-size: 3.25rem;
+  margin-bottom: 1rem;
+}
+
+.image-upload > * {
+  border-radius: 20px;
+}
+
+.image-upload > .upload-button {
+  position: absolute;
+  top: 0;
+  left: 0;
+
+  width: 100%;
+  height: 100%;
+
+  background: none;
+  border: none;
+
+  cursor: pointer;
+}
+
+.image-upload > .upload-image {
+  display: none;
+
+  width: 100%;
+  height: 100%;
+
+  object-fit: contain;
+}
+
+.image-upload > .upload-input {
+  display: none;
+}
+
+.image-controls {
+  width: 100%;
+  height: 100%;
+  list-style: none;
+  margin-top: 1rem;
+}
+
+.image-controls > li {
+  width: 100%;
+  height: 20%;
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: row;
+}
+.button-text{
+  display: flex;
+  flex-direction: column;
+  margin-left: 1rem;
+}
+.title{
+  font-size: 2rem;
+  cursor: pointer;
+}
+.description{
+  color: #404040;
+  font-size: 1.25rem;
+}
+.image-controls > li > button {
+  width: 20%;
+  height: 85%;
+  background-color: #1e1e1e;
+  border: 1px solid #1e1e1e;
+  box-shadow: 1px 2px 18px 0px rgba(0,0,0,0.75);
+  -webkit-box-shadow: 1px 2px 18px 0px rgba(0,0,0,0.75);
+  -moz-box-shadow: 1px 2px 18px 0px rgba(0,0,0,0.75);
+
+  border: none;
+  border-radius: 20px;
+  transition: 1s ease;
+
+  color: #00D8FF;
+  cursor: pointer;
+}
+.note-preference{
+  padding: 1.25rem 1rem;
+}
+
+.image-controls > li > button:disabled {
+  border-color: gray;
+  color: gray;
+
+  cursor: not-allowed;
+}
+.material-symbols-outlined{
+  font-size: 4rem;
+}
+.note-preference 
+.scanned-text{
+  width: 100%;
+  height: 86%;
+  border: 1px solid #ffffffea;
+  padding: 1rem;
+  border-radius: 20px;
+}
+.setNotePreference{
+  display: none;
+  flex-direction: column; 
+  position: absolute;
+  padding: 2rem 2rem;
+  width: 30%;
+  height: 45%;
+  right: 12%;
+  background-color: #1E1E1E;
+  border-radius: 20px;
+}
+.setNotePreferenceTitle{
+  color:#00D8FF;
+  font-size: 1.5rem;
+}
+.setNotePreferenceContent{
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  font-size: 1.5rem;
+}
+.checkmarkContent{
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-self: center;
+}
+.container{
+  display: flex;
+  flex-direction: row;
+  align-items: center ;
+}
+input[type="checkbox"] {
+  width: 1.5rem;
+  height: 1.5rem;
+  border-color: #00D8FF;
+}

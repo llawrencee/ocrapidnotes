@@ -189,9 +189,10 @@ function App() {
               scan: {
                 status_text: res.statusText,
                 time_taken: Date.now() - _t1,
-                data: res.data,
+                data: res.data.map(text =>  text.description).join(" ").replace(/[\r\n]+/gm, " ")
               },
             })
+            console.log(res.data.map(text =>  text.description).join(" "))
           })
           .catch((error) => {
             set_server_response({
@@ -524,7 +525,7 @@ function App() {
                       Word Count:{" "}
                       <i>
                         {server_response.scan.data != 0 ? (
-                          server_response.scan.data.split(" ").length
+                       server_response.scan.data.split(" ").length
                         ) : (
                           <Placeholder as="span" animation="wave">
                             <Placeholder xs={2} />
