@@ -3,6 +3,7 @@ const express_fileupload = require("express-fileupload")
 const cors = require("cors")
 
 const Tesseract = require("tesseract.js")
+const vision = require("@google-cloud/vision")
 const OpenAI = require("openai")
 
 const app = express()
@@ -11,6 +12,7 @@ const PORT = process.env.PORT || 3000
 const llm_client = new OpenAI({
   apiKey: process.env.OPENAI_APIKEY || "",
 })
+const gvapi_client = new vision.ImageAnnotatorClient()
 
 app.use(cors())
 app.use(
@@ -43,19 +45,37 @@ app.post("/upload", (req, res) => {
   res.sendStatus(200)
 })
 
-app.post("/scan", (req, res) => {
+app.post("/scan", async (req, res) => {
   // check if a filename is passed
   if (req.body.filename == "") return res.sendStatus(422)
+  if (req.body.type == "") return res.sendStatus(422)
 
-  Tesseract.recognize("./server/uploads/" + req.body.filename, "eng", {
-    logger: (m) => {
-      console.log(m.status, `${Math.round(m.progress * 100)}%`)
-    },
-  })
-    .catch((err) => console.error(err))
-    .then((result) => {
-      res.send(result.data.text.replace(/[\r\n]+/gm, " "))
+  if (req.body.type == "tesseract") {
+    Tesseract.recognize("./server/uploads/" + req.body.filename, "eng", {
+      logger: (m) => {
+        console.log(m.status, `${Math.round(m.progress * 100)}%`)
+      },
     })
+      .catch((err) => console.error(err))
+      .then((result) => {
+        res.send(result.data.text.replace(/[\r\n]+/gm, " "))
+      })
+  }
+
+  if (req.body.type == "gvapi") {
+    const [result] = await gvapi_client.documentTextDetection(
+      "./server/uploads/" + req.body.filename
+    )
+    const detections = result.textAnnotations
+
+    detections.forEach((text) => console.log(text))
+
+    res.send(detections)
+  }
+
+  if (req.body.type == "pocr") {
+    res.send("hi baus")
+  }
 })
 
 app.post("/format", async (req, res) => {
