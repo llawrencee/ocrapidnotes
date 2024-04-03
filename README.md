@@ -16,17 +16,20 @@ The following are things that are to be implemented in the near future:
 
 ### Server-Side
 
-- [ ] **PaddleOCR** Implementation
-- [ ] Server Error Feedback (Special Cases)
+- [x] **PaddleOCR** Implementation
+- [x] Server Error Feedback (Special Cases)
+- [ ] Format Preferences Prompt Handling
 
 ### Client-Side
 
 - [ ] User <font color="#6ea8fe">**Preference**</font> Tab
+- [ ] Preferences Functionality
 
 ### Research
 
 - Extensive <font color="#ffda6a">**Testing**</font>
-  - [ ] Needs google drive folder for images to test
+  - [x] Needs google drive folder for images to test
+  - [ ] Formatting and analyzation of data
 
 ## Installation
 
@@ -55,7 +58,7 @@ npm run server
 `Terminal 2:`
 
 ```bash
-npm run dev
+npm run client
 ```
 
 By default, the client is hosted on `port:5500` and the server is hosted on `port:3000`. To access the user interface provided by the client script, you can go to
