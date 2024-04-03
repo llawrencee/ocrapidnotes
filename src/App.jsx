@@ -1,5 +1,13 @@
+// Import React Functions
 import { useState, useRef, useEffect } from "react"
+
+// Import Optical Character Recogntion (OCR) Model
+import Tesseract from "tesseract.js"
+
+// Import Fetch Library
 import axios from "axios"
+
+// Import Bootstrap UI Components
 import {
   Card,
   Nav,
@@ -13,17 +21,23 @@ import {
   Form,
 } from "react-bootstrap"
 
+// Set Server URL
 const server_url = "http://localhost:3000/"
 
+// Skeleton Content Generator
 function content_skeleton(amount) {
-  let _placeholders = []
+  let _placeholders = [] // Contains Placeholder Components
+
+  // Generate Placeholder Contents Based on Amount
   for (let i = 0; i < amount; i++) {
     _placeholders.push(
-      <Placeholder xs={Math.floor(Math.random() * 4) + 1} key={i} />
+      <Placeholder xs={Math.floor(Math.random() * 4) + 1} key={i} /> // Randomize Length
     )
+    // Add to Array
     _placeholders.push(" ")
   }
 
+  // Return Animated Placeholders
   return (
     <Placeholder as="div" animation="wave" style={{ textAlign: "left" }}>
       {_placeholders}
@@ -31,11 +45,16 @@ function content_skeleton(amount) {
   )
 }
 
+// Pre-Load Scan & Format Content Skeleton
+// Minimum 20 Placeholders, Maximum 45 Placeholders
 let _s1 = content_skeleton(20 + Math.random() * 25)
 let _s2 = content_skeleton(20 + Math.random() * 25)
 
+// Main Functions
 function App() {
+  // Navigation Tab State
   const [active_tab, set_active_tab] = useState("upload")
+  // Uploaded File State
   const [file, set_file] = useState({
     file: null,
     file_name: "",
@@ -43,7 +62,10 @@ function App() {
     file_type: "",
     modified_date: "",
   })
+  // Selected OCR Model to Use
   const [ocr, set_ocr] = useState("tesseract")
+  // Server Response State
+  // Automatically Updates Values In Real-Time
   const [server_response, set_server_response] = useState({
     upload: {
       status_text: "",
@@ -65,6 +87,10 @@ function App() {
     type: "",
     title: "",
     message: "",
+  })
+  const [preferences, set_preferences] = useState({
+    filter: true,
+    filtered_characters: false,
   })
 
   const upload = new (function () {
@@ -160,6 +186,54 @@ function App() {
     }
   })()
 
+  const filter = (text, type, time, filtered) => {
+    const data = new FormData()
+    data.append("text", text)
+    data.append("filtered_characters", filtered)
+    axios
+      .post(server_url + "filter/", data)
+      .then((res) => {
+        set_server_response({
+          ...server_response,
+          scan: {
+            status_text: res.statusText,
+            time_taken: Date.now() - time,
+            data: res.data.message.content,
+          },
+        })
+        set_notification({
+          active: true,
+          type: "success",
+          title: res.statusText,
+          message: `Successfully scanned and filtered text using <${
+            type == "tesseract"
+              ? "Tesseract"
+              : type == "gvapi"
+              ? "Google Vision API"
+              : type == "pocr"
+              ? "PaddleOCR"
+              : "Undefined"
+          }>.`,
+        })
+      })
+      .catch((error) => {
+        set_server_response({
+          ...server_response,
+          scan: {
+            status_text: error.response.statusText,
+            time_taken: Date.now() - _t1,
+            data: "",
+          },
+        })
+        set_notification({
+          active: true,
+          type: "error",
+          title: error.response.statusText,
+          message: error.message,
+        })
+      })
+  }
+
   const scan = new (function () {
     this.output = {
       element: useRef(),
@@ -171,6 +245,14 @@ function App() {
     }
     this.functions = {
       tesseract_handler: () => {
+        set_server_response({
+          ...server_response,
+          scan: {
+            status_text: "",
+            time_taken: 0,
+            data: "",
+          },
+        })
         set_notification({
           active: true,
           type: "info",
@@ -178,40 +260,63 @@ function App() {
           message: "Extracting text using <Tesseract>. Please wait...",
         })
         const _t1 = Date.now()
-        const data = new FormData()
-        data.append("filename", file.file_name)
-        data.append("type", "tesseract")
-        axios
-          .post(server_url + "scan/", data)
-          .then((res) => {
-            set_server_response({
-              ...server_response,
-              scan: {
-                status_text: res.statusText,
-                time_taken: Date.now() - _t1,
-                data: res.data,
-              },
-            })
-            console.log(res)
-          })
+        Tesseract.recognize("./server/uploads/" + file.file_name, "eng", {
+          logger: (m) => {
+            console.log(m.status, `${Math.round(m.progress * 100)}%`)
+          },
+        })
           .catch((error) => {
             set_server_response({
               ...server_response,
               scan: {
-                status_text: error.response.statusText,
+                status_text: "BAD REQUEST",
                 time_taken: Date.now() - _t1,
                 data: "",
               },
             })
             set_notification({
               active: true,
-              type: "error",
-              title: error.response.statusText,
-              message: error.message,
+              type: "danger",
+              title: new Error(error).name,
+              message: new Error(error).message,
             })
+          })
+          .then((result) => {
+            if (preferences.filter) {
+              filter(
+                result.data.text.replace(/[\r\n]+/gm, " "),
+                "tesseract",
+                _t1,
+                preferences.filtered_characters
+              )
+            } else {
+              set_server_response({
+                ...server_response,
+                scan: {
+                  status_text: "OK",
+                  time_taken: Date.now() - _t1,
+                  data: result.data.text.replace(/[\r\n]+/gm, " "),
+                },
+              })
+              set_notification({
+                active: true,
+                type: "success",
+                title: "OK",
+                message:
+                  "Successfully scanned and filtered text using <Tesseract>.",
+              })
+            }
           })
       },
       gvapi_handler: () => {
+        set_server_response({
+          ...server_response,
+          scan: {
+            status_text: "",
+            time_taken: 0,
+            data: "",
+          },
+        })
         set_notification({
           active: true,
           type: "info",
@@ -225,17 +330,18 @@ function App() {
         axios
           .post(server_url + "scan/", data)
           .then((res) => {
-            set_server_response({
-              ...server_response,
-              scan: {
-                status_text: res.statusText,
-                time_taken: Date.now() - _t1,
-                data: res.data
-                  .map((text) => text.description)
-                  .join(" ")
-                  .replace(/[\r\n]+/gm, " "),
-              },
-            })
+            if (preferences.filter) {
+              filter(res.data, "gvapi", _t1, preferences.filtered_characters)
+            } else {
+              set_server_response({
+                ...server_response,
+                scan: {
+                  status_text: res.statusText,
+                  time_taken: Date.now() - _t1,
+                  data: res.data,
+                },
+              })
+            }
             console.log(res)
           })
           .catch((error) => {
@@ -313,7 +419,7 @@ function App() {
         })
         const _t1 = Date.now()
         const data = new FormData()
-        data.append("text", server_response.scan.data)
+        data.append("text", document.getElementById("scan_output").value)
         axios
           .post(server_url + "format/", data)
           .then((res) => {
@@ -556,24 +662,55 @@ function App() {
               </Tab>
               <Tab eventKey="scan" className="scan-pane">
                 <div className="scan-output">
-                  <pre ref={scan.output.element}>
-                    {server_response.scan.data != ""
-                      ? server_response.scan.data
-                      : _s1}
-                  </pre>
+                  {server_response.scan.data != "" ? (
+                    <textarea
+                      ref={scan.output.element}
+                      id="scan_output"
+                      defaultValue={server_response.scan.data}></textarea>
+                  ) : (
+                    _s1
+                  )}
                 </div>
                 <div className="scan-status">
                   <h4>Scan Controls</h4>
                   <ul className="controls-list">
                     <li>
-                      OCR&nbsp;Model:
+                      Scanning&nbsp;Type:
                       <Form.Select
                         size="sm"
                         onChange={scan.select.change_handler}>
-                        <option value="gvapi">Google Vision API</option>
-                        <option value="tesseract">Tesseract</option>
-                        <option value="pocr">PaddleOCR</option>
+                        <option value="tesseract">Rapid Offline Mode</option>
+                        <option value="gvapi">Accurate Online Mode</option>
+                        <option value="pocr">Accurate Offline Mode</option>
                       </Form.Select>
+                    </li>
+                    <li>
+                      <Form.Check
+                        type="switch"
+                        label="Filter"
+                        checked={preferences.filter}
+                        onChange={() => {
+                          set_preferences({
+                            ...preferences,
+                            filter: !preferences.filter,
+                          })
+                        }}
+                      />
+                    </li>
+                    <li>
+                      <Form.Check
+                        type="switch"
+                        checked={preferences.filtered_characters}
+                        disabled={!preferences.filter}
+                        label="Show Filtered Characters"
+                        onChange={() => {
+                          set_preferences({
+                            ...preferences,
+                            filtered_characters:
+                              !preferences.filtered_characters,
+                          })
+                        }}
+                      />
                     </li>
                   </ul>
                   <h4>Server Status</h4>
@@ -643,7 +780,9 @@ function App() {
                           : true
                       }
                       onClick={() => {
-                        navigator.clipboard.writeText(server_response.scan.data)
+                        navigator.clipboard.writeText(
+                          document.getElementById("scan_output").value
+                        )
                       }}>
                       Copy
                     </Button>
@@ -667,7 +806,7 @@ function App() {
               </Tab>
               <Tab eventKey="format" className="format-pane">
                 <div className="format-output">
-                  <pre ref={format.output.element}>
+                  <pre ref={format.output.element} id="format_output">
                     {server_response.format.data != ""
                       ? server_response.format.data
                       : _s2}
@@ -714,7 +853,7 @@ function App() {
                       }
                       onClick={() => {
                         navigator.clipboard.writeText(
-                          server_response.format.data
+                          document.getElementById("format_output").value
                         )
                       }}>
                       Copy
@@ -728,7 +867,52 @@ function App() {
                 </div>
               </Tab>
               <Tab eventKey="preferences" className="preferences-pane">
-                Preferences
+                <div className="preferences-output"></div>
+                <div className="preferences-status">
+                  <h4>Scan Controls</h4>
+                  <ul className="controls-list">
+                    <li>
+                      <Form.Check
+                        type="switch"
+                        label="Title"
+                        value="title"
+                        checked={false}
+                      />
+                    </li>
+                    <li>
+                      <Form.Check
+                        type="switch"
+                        label="List"
+                        value="list"
+                        checked={false}
+                      />
+                    </li>
+                    <li>
+                      <Form.Check
+                        type="switch"
+                        label="Outline"
+                        value="outline"
+                        checked={false}
+                      />
+                    </li>
+                    <li>
+                      <Form.Check
+                        type="switch"
+                        label="Paraphrase"
+                        value="paraphrase"
+                        checked={false}
+                      />
+                    </li>
+                    <li>
+                      <Form.Check
+                        type="switch"
+                        label="Translate"
+                        value="translate"
+                        checked={false}
+                      />
+                    </li>
+                  </ul>
+                </div>
               </Tab>
             </Tabs>
           </Card.Body>
