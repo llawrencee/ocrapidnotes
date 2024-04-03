@@ -19,7 +19,7 @@ const PORT = process.env.PORT || 3000
 const llm_client = new OpenAI({
   apiKey:
     process.env.OPENAI_APIKEY ||
-    "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",
+    "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",
 })
 const gvapi_client = new vision.ImageAnnotatorClient()
 
@@ -81,8 +81,23 @@ app.post("/scan", async (req, res) => {
     )
   }
 
+  // PADDLEOCR
   if (req.body.type == "pocr") {
-    res.send("hi baus")
+    // Create Python Process
+    // python pp_ocr.py filename.jpg
+    const _process = spawn("python", [
+      "./server/pp_ocr.py",
+      "./server/uploads/" + req.body.filename,
+    ])
+
+    // Wait For Output Text
+    _process.stdout.on("data", (data) => {
+      const output = Buffer.from(data)
+        .toString("ascii")
+        .replace(/[\r\n]+/gm, " ")
+
+      res.send(output)
+    })
   }
 })
 
