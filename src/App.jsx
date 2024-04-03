@@ -270,6 +270,7 @@ function App() {
     }
     // OCR Model Functions
     this.functions = {
+      // TESSERACT
       tesseract_handler: () => {
         // Clear Scan Response
         set_server_response({
@@ -335,6 +336,7 @@ function App() {
             }
           })
       },
+      // GOOGLE VISION API
       gvapi_handler: () => {
         set_server_response({
           ...server_response,
@@ -388,6 +390,7 @@ function App() {
             })
           })
       },
+      // PADDLEOCR
       pocr_handler: () => {
         set_server_response({
           ...server_response,
@@ -444,11 +447,13 @@ function App() {
     }
   })()
 
+  // FORMAT
   const format = new (function () {
     this.output = {
       element: useRef(),
     }
     this.function = {
+      // GPT
       llm_handler: () => {
         set_notification({
           active: true,
@@ -493,6 +498,7 @@ function App() {
   })()
 
   // CONNECT TO SERVER
+  // Test If Server Is Online
   useEffect(() => {
     axios
       .get(server_url)
@@ -516,11 +522,13 @@ function App() {
       })
   }, [])
 
+  // Render
   return (
     <>
       <main data-bs-theme="dark">
         <Card border="success" className="main-card">
           <Card.Header>
+            {/* Nav - Links for moving between Tabs */}
             <Nav
               variant="tabs"
               defaultActiveKey="upload"
@@ -562,7 +570,9 @@ function App() {
             </Nav>
           </Card.Header>
           <Card.Body className="main-card-body">
+            {/* Tab - Each section for the specific tabs */}
             <Tabs defaultActiveKey="upload" activeKey={active_tab}>
+              {/* UPLOAD */}
               <Tab eventKey="upload" className="upload-pane">
                 <div className="upload-image">
                   <label ref={upload.label.element}>
@@ -699,13 +709,22 @@ function App() {
                   </div>
                 </div>
               </Tab>
+
+              {/* SCAN */}
               <Tab eventKey="scan" className="scan-pane">
                 <div className="scan-output">
                   {server_response.scan.data != "" ? (
                     <textarea
                       ref={scan.output.element}
                       id="scan_output"
-                      defaultValue={server_response.scan.data}></textarea>
+                      defaultValue={server_response.scan.data}
+                      autoFocus
+                      onFocus={(event) => {
+                        event.target.setSelectionRange(
+                          event.target.value.length,
+                          event.target.value.length
+                        )
+                      }}></textarea>
                   ) : (
                     _s1
                   )}
@@ -843,6 +862,8 @@ function App() {
                   </div>
                 </div>
               </Tab>
+
+              {/* FORMAT */}
               <Tab eventKey="format" className="format-pane">
                 <div className="format-output">
                   <pre ref={format.output.element} id="format_output">
@@ -905,6 +926,8 @@ function App() {
                   </div>
                 </div>
               </Tab>
+
+              {/* PREFERENCES */}
               <Tab eventKey="preferences" className="preferences-pane">
                 <div className="preferences-output"></div>
                 <div className="preferences-status">
@@ -957,6 +980,7 @@ function App() {
           </Card.Body>
         </Card>
 
+        {/* Notification Toast */}
         <ToastContainer
           className="p-3"
           position="bottom-start"
@@ -966,7 +990,7 @@ function App() {
               borderColor:
                 notification.type == "success"
                   ? "var(--bs-success-border-subtle)"
-                  : notification.type == "primary"
+                  : notification.type == "info"
                   ? "var(--bs-info-border-subtle)"
                   : notification.type == "warning"
                   ? "var(--bs-warning-border-subtle)"
@@ -981,7 +1005,7 @@ function App() {
                 active: false,
               })
             }
-            delay={8000}
+            delay={8000} // 8 Seconds
             autohide>
             <Toast.Header closeButton={true}>
               <strong className="me-auto">OCRapidNotes</strong>
