@@ -1,20 +1,31 @@
+// Import Server Functions
 const express = require("express")
 const express_fileupload = require("express-fileupload")
 const cors = require("cors")
 
+// System Functions
+const { spawn } = require("child_process")
+
+// Import Optical Character Recogntion (OCR) Models
 const Tesseract = require("tesseract.js")
 const vision = require("@google-cloud/vision")
 const OpenAI = require("openai")
 
+// Initialize Server Defaults
 const app = express()
 const PORT = process.env.PORT || 3000
 
+// OCR & Large Language Model (LLM) Clients
 const llm_client = new OpenAI({
-  apiKey: process.env.OPENAI_APIKEY || "",
+  apiKey:
+    process.env.OPENAI_APIKEY ||
+    "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",
 })
 const gvapi_client = new vision.ImageAnnotatorClient()
 
+// Enable File Uploads
 app.use(cors())
+// File Upload Limitations
 app.use(
   express_fileupload({
     limits: {
@@ -23,7 +34,7 @@ app.use(
     abortOnLimit: true,
   })
 )
-app.use("/uploads", express.static("server/uploads"))
+app.use("/uploads", express.static("server/uploads")) // Location of Uploads
 
 // ROUTES
 app.get("/", (req, res) => {
@@ -31,46 +42,43 @@ app.get("/", (req, res) => {
 })
 
 app.post("/upload", (req, res) => {
-  // check if there is any file
+  // Check If Uploaded File Exists
   if (!req.files) return res.sendStatus(417)
 
   const image = req.files.file
 
-  // test if the file is an image or not
+  // Test File Mimetype
   if (!/^image/.test(image.mimetype)) return res.sendStatus(415)
 
-  // save image in the uploads directory
+  // Save Image
   image.mv(__dirname + "/uploads/" + image.name)
 
-  res.sendStatus(200)
+  res.sendStatus(200) // OK
 })
 
 app.post("/scan", async (req, res) => {
-  // check if a filename is passed
-  if (req.body.filename == "") return res.sendStatus(422)
-  if (req.body.type == "") return res.sendStatus(422)
+  // Check If Filename Exists
+  if (req.body.filename == "") return res.sendStatus(422) // Unprocessable Content
+  // Check If OCR Type Exists
+  if (req.body.type == "") return res.sendStatus(422) // Unprocessable Content
 
-  if (req.body.type == "tesseract") {
-    Tesseract.recognize("./server/uploads/" + req.body.filename, "eng", {
-      logger: (m) => {
-        console.log(m.status, `${Math.round(m.progress * 100)}%`)
-      },
-    })
-      .catch((err) => console.error(err))
-      .then((result) => {
-        res.send(result.data.text.replace(/[\r\n]+/gm, " "))
-      })
-  }
-
+  // GOOGLE VISION API
   if (req.body.type == "gvapi") {
     const [result] = await gvapi_client.documentTextDetection(
       "./server/uploads/" + req.body.filename
     )
     const detections = result.textAnnotations
 
+    // Log Text Output
     detections.forEach((text) => console.log(text))
 
-    res.send(detections)
+    // Send Scanned Output
+    res.send(
+      detections
+        .map((text) => text.description)
+        .join(" ")
+        .replace(/[\r\n]+/gm, " ")
+    )
   }
 
   if (req.body.type == "pocr") {
@@ -78,15 +86,31 @@ app.post("/scan", async (req, res) => {
   }
 })
 
-app.post("/format", async (req, res) => {
-  console.log(req.body.text)
+app.post("/filter", async (req, res) => {
+  // Check If Text To Filter Exists
+  if (req.body.text == "") return res.sendStatus(422) // Unprocessable Content
+  // Check If Filtered Characters Preference Exists
+  if (req.body.filtered_characters == "") return res.sendStatus(422) // Unprocessable Content
+
+  let _message =
+    "You are a tool that filters unreadable characters or words from the following text. If you found an unreadable word, attempt to fix or correct it. If it can't be fixed, leave it as is. Display the filtered output in paragraph form. "
+
+  // Conditional For Filtered Character List Prompt
+  if (req.body.filtered_characters == "true") {
+    _message +=
+      "After doing so, specify the filtered characters or words in list form. Also specify the unreadable words you have corrected. Be verbose as possible when listing the filtered characters or words. Make sure every changes or filter is mentioned. "
+  } else {
+    _message +=
+      "After doing so, do not specify the filtered characters or words. Just the filtered output. "
+  }
+  _message +=
+    "Don't show another Filtered Output again. Don't say anything, just the output."
 
   const completion = await llm_client.chat.completions.create({
     messages: [
       {
         role: "system",
-        content:
-          "Treat everything as notes. Format them to make it more understandable. Use hierarchy in listing things. Use ## for titles and - for definitions.",
+        content: _message,
       },
       {
         role: "user",
@@ -96,7 +120,32 @@ app.post("/format", async (req, res) => {
     model: "gpt-3.5-turbo",
   })
 
+  // Send Filtered Output
   res.send(completion.choices[0])
 })
 
+app.post("/format", async (req, res) => {
+  // Check If Text To Format Exists
+  if (req.body.text == "") return res.sendStatus(422) // Unprocessable Content
+
+  const completion = await llm_client.chat.completions.create({
+    messages: [
+      {
+        role: "system",
+        content:
+          "Treat everything as notes. Format them to make it more understandable. Do not add any extra content.",
+      },
+      {
+        role: "user",
+        content: req.body.text,
+      },
+    ],
+    model: "gpt-3.5-turbo",
+  })
+
+  // Send Formatted Output
+  res.send(completion.choices[0])
+})
+
+// Start Server
 app.listen(PORT, () => console.log(`Server running on port: ${PORT}`))
