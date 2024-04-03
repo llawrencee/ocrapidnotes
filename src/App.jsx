@@ -25,10 +25,11 @@ import {
 const server_url = "http://localhost:3000/"
 
 // Skeleton Content Generator
+// amount:int; number of placeholders to create
 function content_skeleton(amount) {
   let _placeholders = [] // Contains Placeholder Components
 
-  // Generate Placeholder Contents Based on Amount
+  // Generate Placeholder Contents
   for (let i = 0; i < amount; i++) {
     _placeholders.push(
       <Placeholder xs={Math.floor(Math.random() * 4) + 1} key={i} /> // Randomize Length
@@ -64,8 +65,7 @@ function App() {
   })
   // Selected OCR Model to Use
   const [ocr, set_ocr] = useState("tesseract")
-  // Server Response State
-  // Automatically Updates Values In Real-Time
+  // Server Responses Object
   const [server_response, set_server_response] = useState({
     upload: {
       status_text: "",
@@ -73,33 +73,39 @@ function App() {
     },
     scan: {
       status_text: "",
-      time_taken: 0,
-      data: "",
+      time_taken: 0, // Measured in ms
+      data: "", // Scanned Text
     },
     format: {
       status_text: "",
-      time_taken: 0,
-      data: "",
+      time_taken: 0, // Measured in ms
+      data: "", // Formatted Text
     },
   })
+  // Toast Notification State
   const [notification, set_notification] = useState({
     active: false,
-    type: "",
+    type: "", // "success", "info", "warning", "danger"
     title: "",
     message: "",
   })
+  // Set Default Preferences
   const [preferences, set_preferences] = useState({
     filter: true,
     filtered_characters: false,
   })
 
+  // UPLOAD
   const upload = new (function () {
     this.label = { element: useRef() }
     this.image = { element: useRef() }
     this.input = {
       element: useRef(),
+      // Manage File Input Change Event
       change_handler: (event) => {
+        // Get File
         let _url = event.target.files[0]
+        // Check If File Exists
         if (_url == undefined) {
           set_notification({
             active: true,
@@ -110,6 +116,7 @@ function App() {
           this.input.element.current.value = ""
           return
         }
+        // Check If File Has Image Mimetype
         if (!/^image/.test(_url.type)) {
           set_notification({
             active: true,
@@ -120,7 +127,9 @@ function App() {
           this.input.element.current.value = ""
           return
         }
+        // Store Image Locally
         this.image.file = _url
+        // Update File State With File Metadata
         set_file({
           file: _url,
           file_name: _url.name,
@@ -128,11 +137,14 @@ function App() {
           file_type: _url.type,
           modified_date: _url.lastModifiedDate,
         })
+        // Hide Label, Set - Show Uploaded Image
         this.label.element.current.style.display = "none"
         this.image.element.current.src = URL.createObjectURL(_url)
         this.image.element.current.style.display = "block"
       },
+      // Manage Remove Uploaded Image
       remove_handler: () => {
+        // Remove Image From Input Element
         upload.input.element.current.value = ""
         set_file({
           file: null,
@@ -141,17 +153,21 @@ function App() {
           file_type: "",
           modified_date: "",
         })
+        // Show Label, Remove - Hide Uploaded Image
         this.label.element.current.style.display = "flex"
         this.image.element.current.src = ""
         this.image.element.current.style.display = "none"
       },
+      // Manage File Upload
       upload_handler: () => {
+        // Start Time Profiling For Upload
         const _t1 = Date.now()
         const data = new FormData()
-        data.append("file", file.file)
+        data.append("file", file.file) // Add File To Form Data
         axios
-          .post(server_url + "upload/", data)
+          .post(server_url + "upload/", data) // localhost:3000/upload/
           .then((res) => {
+            // Save Server Response In Upload Object
             set_server_response({
               ...server_response,
               upload: {
@@ -159,6 +175,7 @@ function App() {
                 time_taken: Date.now() - _t1,
               },
             })
+            // Notify User
             set_notification({
               active: true,
               type: "success",
@@ -186,6 +203,11 @@ function App() {
     }
   })()
 
+  // FILTER
+  // text:string; text to be filtered
+  // type:string; ocr model
+  // time:int; time started profile
+  // filtered:boolean; show filtered characters or not
   const filter = (text, type, time, filtered) => {
     const data = new FormData()
     data.append("text", text)
@@ -213,7 +235,7 @@ function App() {
               : type == "pocr"
               ? "PaddleOCR"
               : "Undefined"
-          }>.`,
+          }>.`, // Returns <Tesseract>, <Google Vision API>, or <PaddleOCR>
         })
       })
       .catch((error) => {
@@ -234,17 +256,22 @@ function App() {
       })
   }
 
+  // SCAN
   const scan = new (function () {
     this.output = {
       element: useRef(),
     }
     this.select = {
+      // Form Select OnChange Event Handler
       change_handler: (event) => {
+        // Replace OCR Used Based On Input
         set_ocr(event.target.value)
       },
     }
+    // OCR Model Functions
     this.functions = {
       tesseract_handler: () => {
+        // Clear Scan Response
         set_server_response({
           ...server_response,
           scan: {
@@ -260,7 +287,7 @@ function App() {
           message: "Extracting text using <Tesseract>. Please wait...",
         })
         const _t1 = Date.now()
-        Tesseract.recognize("./server/uploads/" + file.file_name, "eng", {
+        Tesseract.recognize(server_url + "uploads/" + file.file_name, "eng", {
           logger: (m) => {
             console.log(m.status, `${Math.round(m.progress * 100)}%`)
           },
@@ -362,6 +389,14 @@ function App() {
           })
       },
       pocr_handler: () => {
+        set_server_response({
+          ...server_response,
+          scan: {
+            status_text: "",
+            time_taken: 0,
+            data: "",
+          },
+        })
         set_notification({
           active: true,
           type: "info",
@@ -375,14 +410,18 @@ function App() {
         axios
           .post(server_url + "scan/", data)
           .then((res) => {
-            set_server_response({
-              ...server_response,
-              scan: {
-                status_text: res.statusText,
-                time_taken: Date.now() - _t1,
-                data: res.data,
-              },
-            })
+            if (preferences.filter) {
+              filter(res.data, "pocr", _t1, preferences.filtered_characters)
+            } else {
+              set_server_response({
+                ...server_response,
+                scan: {
+                  status_text: res.statusText,
+                  time_taken: Date.now() - _t1,
+                  data: res.data,
+                },
+              })
+            }
             console.log(res)
           })
           .catch((error) => {
