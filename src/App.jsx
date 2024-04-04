@@ -1,5 +1,5 @@
 // Import React Functions
-import { useState, useRef, useEffect } from "react"
+import { useEffect, useRef, useState } from "react"
 
 // Import Optical Character Recogntion (OCR) Model
 import Tesseract from "tesseract.js"
@@ -7,18 +7,22 @@ import Tesseract from "tesseract.js"
 // Import Fetch Library
 import axios from "axios"
 
+// Import Cookie Library
+import Cookies from "js-cookie"
+
 // Import Bootstrap UI Components
 import {
-  Card,
-  Nav,
-  Button,
-  Tabs,
-  Tab,
   Badge,
+  Button,
+  Card,
+  Form,
+  Nav,
   Placeholder,
+  Stack,
+  Tab,
+  Tabs,
   Toast,
   ToastContainer,
-  Form,
 } from "react-bootstrap"
 
 // Set Server URL
@@ -50,6 +54,7 @@ function content_skeleton(amount) {
 // Minimum 20 Placeholders, Maximum 45 Placeholders
 let _s1 = content_skeleton(20 + Math.random() * 25)
 let _s2 = content_skeleton(20 + Math.random() * 25)
+let _s3 = content_skeleton(20 + Math.random() * 25)
 
 // Main Functions
 function App() {
@@ -68,16 +73,16 @@ function App() {
   // Server Responses Object
   const [server_response, set_server_response] = useState({
     upload: {
-      status_text: "",
-      time_taken: 0,
+      status_text: "", // Server Response
+      time_taken: 0, // Measured in ms
     },
     scan: {
-      status_text: "",
+      status_text: "", // Server Response
       time_taken: 0, // Measured in ms
       data: "", // Scanned Text
     },
     format: {
-      status_text: "",
+      status_text: "", // Server Response
       time_taken: 0, // Measured in ms
       data: "", // Formatted Text
     },
@@ -91,9 +96,38 @@ function App() {
   })
   // Set Default Preferences
   const [preferences, set_preferences] = useState({
-    filter: true,
-    filtered_characters: false,
+    scan: {
+      filter: true,
+      filtered_characters: false,
+    },
+    format: {
+      title: true,
+      list: true,
+      outline: false,
+      paraphrase: false,
+      translate: false,
+      language: "English",
+    },
   })
+  // Apply Cookie Preferences
+  useEffect(() => {
+    if (Cookies.get("preferences")) {
+      let _preference = JSON.parse(Cookies.get("preferences"))
+      set_preferences({
+        ...preferences,
+        format: {
+          title: _preference.format.title,
+          list: _preference.format.list,
+          outline: _preference.format.outline,
+          paraphrase: _preference.format.paraphrase,
+          translate: _preference.format.translate,
+          language: _preference.format.language,
+        },
+      })
+      document.getElementById("input_language").value =
+        _preference.format.language
+    }
+  }, [])
 
   // UPLOAD
   const upload = new (function () {
@@ -243,7 +277,7 @@ function App() {
           ...server_response,
           scan: {
             status_text: error.response.statusText,
-            time_taken: Date.now() - _t1,
+            time_taken: Date.now() - time,
             data: "",
           },
         })
@@ -310,12 +344,12 @@ function App() {
             })
           })
           .then((result) => {
-            if (preferences.filter) {
+            if (preferences.scan.filter) {
               filter(
                 result.data.text.replace(/[\r\n]+/gm, " "),
                 "tesseract",
                 _t1,
-                preferences.filtered_characters
+                preferences.scan.filtered_characters
               )
             } else {
               set_server_response({
@@ -336,6 +370,7 @@ function App() {
             }
           })
       },
+
       // GOOGLE VISION API
       gvapi_handler: () => {
         set_server_response({
@@ -359,8 +394,14 @@ function App() {
         axios
           .post(server_url + "scan/", data)
           .then((res) => {
-            if (preferences.filter) {
-              filter(res.data, "gvapi", _t1, preferences.filtered_characters)
+            if (preferences.scan.filter) {
+              console.log("filtered")
+              filter(
+                res.data,
+                "gvapi",
+                _t1,
+                preferences.scan.filtered_characters
+              )
             } else {
               set_server_response({
                 ...server_response,
@@ -390,6 +431,7 @@ function App() {
             })
           })
       },
+
       // PADDLEOCR
       pocr_handler: () => {
         set_server_response({
@@ -413,8 +455,13 @@ function App() {
         axios
           .post(server_url + "scan/", data)
           .then((res) => {
-            if (preferences.filter) {
-              filter(res.data, "pocr", _t1, preferences.filtered_characters)
+            if (preferences.scan.filter) {
+              filter(
+                res.data,
+                "pocr",
+                _t1,
+                preferences.scan.filtered_characters
+              )
             } else {
               set_server_response({
                 ...server_response,
@@ -455,6 +502,14 @@ function App() {
     this.function = {
       // GPT
       llm_handler: () => {
+        set_server_response({
+          ...server_response,
+          format: {
+            status_text: "",
+            time_taken: 0,
+            data: "",
+          },
+        })
         set_notification({
           active: true,
           type: "info",
@@ -464,6 +519,7 @@ function App() {
         const _t1 = Date.now()
         const data = new FormData()
         data.append("text", document.getElementById("scan_output").value)
+        data.append("preferences", JSON.stringify(preferences.format))
         axios
           .post(server_url + "format/", data)
           .then((res) => {
@@ -746,11 +802,14 @@ function App() {
                       <Form.Check
                         type="switch"
                         label="Filter"
-                        checked={preferences.filter}
+                        checked={preferences.scan.filter}
                         onChange={() => {
                           set_preferences({
                             ...preferences,
-                            filter: !preferences.filter,
+                            scan: {
+                              ...preferences.scan,
+                              filter: !preferences.scan.filter,
+                            },
                           })
                         }}
                       />
@@ -758,14 +817,17 @@ function App() {
                     <li>
                       <Form.Check
                         type="switch"
-                        checked={preferences.filtered_characters}
-                        disabled={!preferences.filter}
+                        checked={preferences.scan.filtered_characters}
+                        disabled={!preferences.scan.filter}
                         label="Show Filtered Characters"
                         onChange={() => {
                           set_preferences({
                             ...preferences,
-                            filtered_characters:
-                              !preferences.filtered_characters,
+                            scan: {
+                              ...preferences.scan,
+                              filtered_characters:
+                                !preferences.scan.filtered_characters,
+                            },
                           })
                         }}
                       />
@@ -929,7 +991,28 @@ function App() {
 
               {/* PREFERENCES */}
               <Tab eventKey="preferences" className="preferences-pane">
-                <div className="preferences-output"></div>
+                <div className="preferences-output">
+                  <pre>
+                    {preferences.format.title ? "## Lorem Ipsum\n" : ""}
+                    {preferences.format.list
+                      ? "\n- Lorem ipsum dolor sit amet, consectetur adipiscing elit. Praesent ullamcorper gravida diam in scelerisque.\n\n- Nulla erat ex, consectetur ut imperdiet eget, ultricies ac magna.\n\n- Vestibulum accumsan velit quis velit sollicitudin finibus. Quisque ac suscipit justo, ut semper mi.\n\n- In volutpat, justo eget pretium fringilla, mi eros tempus nisl, id pellentesque sapien purus posuere nisi.\n"
+                      : ""}
+                    {preferences.format.outline
+                      ? "\n- Praesent ullamcorper gravida diam in scelerisque. Nulla erat ex, consectetur ut imperdiet eget, ultricies ac magna. Vestibulum accumsan velit quis velit sollicitudin finibus. Quisque ac suscipit justo, ut semper mi. In volutpat, justo eget pretium fringilla, mi eros tempus nisl, id pellentesque sapien purus posuere nisi. Cras efficitur turpis non hendrerit dapibus. Nulla hendrerit vitae sapien bibendum sodales. Pellentesque eget eleifend est. Pellentesque consequat ultrices neque, vitae interdum lacus. Mauris mollis feugiat elit. Interdum et malesuada fames ac ante ipsum primis in faucibus. Suspendisse posuere lobortis urna, ut sagittis dolor congue sed. In ante leo, lacinia non ligula lacinia, sagittis malesuada odio. Aliquam vitae auctor velit. Praesent faucibus vitae odio in tincidunt. Vivamus auctor gravida mollis."
+                      : ""}
+                    {preferences.format.paraphrase
+                      ? "\n- A gravida element within scelerisque, rich in magna ultricies. Seeking solicitation in finibus. Embracing justo, navigating through semper. Volutpat holds a pretium fringilla, temporally distinct. Efficitur turpis, non-hendrerit dapibus. Void of hendrerit, yet imbued with bibendum sodales. Consequat ultrices, interdum lacus vitae. Mollis feugiat, elit in essence. Embracing interdum and fames, ante ipsum faucibus. Posuere lobortis suspends, dolorously congue sed. Preceding leo, non-ligula, odio malesuada sagittis. Auctor vitae, embracing odio in tincidunt. Auctor mollis gravida."
+                      : ""}
+                    {!(
+                      preferences.format.title ||
+                      preferences.format.list ||
+                      preferences.format.outline ||
+                      preferences.format.paraphrase
+                    )
+                      ? _s3
+                      : ""}
+                  </pre>
+                </div>
                 <div className="preferences-status">
                   <h4>Scan Controls</h4>
                   <ul className="controls-list">
@@ -937,43 +1020,186 @@ function App() {
                       <Form.Check
                         type="switch"
                         label="Title"
-                        value="title"
-                        checked={false}
+                        checked={preferences.format.title}
+                        onChange={() => {
+                          set_preferences({
+                            ...preferences,
+                            format: {
+                              ...preferences.format,
+                              title: !preferences.format.title,
+                            },
+                          })
+                        }}
                       />
                     </li>
                     <li>
                       <Form.Check
                         type="switch"
                         label="List"
-                        value="list"
-                        checked={false}
+                        checked={preferences.format.list}
+                        onChange={() => {
+                          set_preferences({
+                            ...preferences,
+                            format: {
+                              ...preferences.format,
+                              list: !preferences.format.list,
+                            },
+                          })
+                        }}
+                        disabled={
+                          preferences.format.outline ||
+                          preferences.format.paraphrase
+                        }
                       />
                     </li>
                     <li>
                       <Form.Check
                         type="switch"
                         label="Outline"
-                        value="outline"
-                        checked={false}
+                        checked={preferences.format.outline}
+                        onChange={() => {
+                          set_preferences({
+                            ...preferences,
+                            format: {
+                              ...preferences.format,
+                              outline: !preferences.format.outline,
+                            },
+                          })
+                        }}
+                        disabled={
+                          preferences.format.list ||
+                          preferences.format.paraphrase
+                        }
                       />
                     </li>
                     <li>
                       <Form.Check
                         type="switch"
                         label="Paraphrase"
-                        value="paraphrase"
-                        checked={false}
+                        checked={preferences.format.paraphrase}
+                        onChange={() => {
+                          set_preferences({
+                            ...preferences,
+                            format: {
+                              ...preferences.format,
+                              paraphrase: !preferences.format.paraphrase,
+                            },
+                          })
+                        }}
+                        disabled={
+                          preferences.format.list || preferences.format.outline
+                        }
                       />
                     </li>
                     <li>
                       <Form.Check
                         type="switch"
                         label="Translate"
-                        value="translate"
-                        checked={false}
+                        checked={preferences.format.translate}
+                        onChange={() => {
+                          set_preferences({
+                            ...preferences,
+                            format: {
+                              ...preferences.format,
+                              translate: !preferences.format.translate,
+                            },
+                          })
+                          if (!preferences.format.translate) {
+                            document.getElementById("input_language").focus()
+                          }
+                        }}
                       />
                     </li>
+                    <li>
+                      <Form.Group as={Stack}>
+                        <Stack direction="horizontal" gap={3}>
+                          <Form.Label
+                            htmlFor="input_language"
+                            className={
+                              !preferences.format.translate
+                                ? "text-secondary"
+                                : ""
+                            }
+                            style={{ marginBottom: 0 }}>
+                            Translate&nbsp;To
+                          </Form.Label>
+                          <Form.Control
+                            size="sm"
+                            type="text"
+                            id="input_language"
+                            defaultValue={preferences.format.language}
+                            readOnly={!preferences.format.translate}
+                          />
+                        </Stack>
+                      </Form.Group>
+                    </li>
                   </ul>
+                  <div className="preferences-controls">
+                    <Button
+                      variant="danger"
+                      disabled={
+                        preferences.format.title == true &&
+                        preferences.format.list == true &&
+                        preferences.format.outline == false &&
+                        preferences.format.paraphrase == false &&
+                        preferences.format.translate == false &&
+                        preferences.format.language == "English"
+                          ? true
+                          : false
+                      }
+                      onClick={() => {
+                        set_preferences({
+                          ...preferences,
+                          format: {
+                            title: true,
+                            list: true,
+                            outline: false,
+                            paraphrase: false,
+                            translate: false,
+                            language: "English",
+                          },
+                        })
+                        document.getElementById("input_language").value =
+                          "English"
+                      }}>
+                      Reset to Default
+                    </Button>
+                    <Button
+                      variant="success"
+                      onClick={() => {
+                        Cookies.set(
+                          "preferences",
+                          `{"format": {"title": ${
+                            preferences.format.title
+                          },"list": ${preferences.format.list},"outline": ${
+                            preferences.format.outline
+                          },"paraphrase": ${
+                            preferences.format.paraphrase
+                          },"translate": ${
+                            preferences.format.translate
+                          },"language": "${
+                            document.getElementById("input_language").value
+                          }"}}`
+                        )
+                        set_preferences({
+                          ...preferences,
+                          format: {
+                            ...preferences.format,
+                            language:
+                              document.getElementById("input_language").value,
+                          },
+                        })
+                        set_notification({
+                          active: true,
+                          type: "success",
+                          title: "Saved Preferences",
+                          message:
+                            "User preferences has been stored in a cookie.",
+                        })
+                      }}>
+                      Save
+                    </Button>
+                  </div>
                 </div>
               </Tab>
             </Tabs>
