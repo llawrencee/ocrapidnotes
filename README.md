@@ -47,6 +47,34 @@ cd ./ocrapidnotes/
 npm install
 ```
 
+then, you can install `@google-cloud/vision` using
+
+```bash
+npm install @google-cloud/vision
+```
+
+to enable PaddleOCR, you also need to follow the [quickstart guide](https://github.com/PaddlePaddle/PaddleOCR/blob/release/2.7/doc/doc_en/quickstart_en.md) or use the following commands to install `paddlepaddle` on your machine
+
+> If you have CUDA 9 or CUDA 10 installed on your machine, please run the following command to install
+
+```bash
+python -m pip install paddlepaddle-gpu -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
+or
+
+> If you have no available GPU on your machine, please run the following command to install the CPU version
+
+```bash
+python -m pip install paddlepaddle -i https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
+finally, you need to install the PaddleOCR Whl Package
+
+```bash
+pip install "paddleocr>=2.0.1" # Recommend to use version 2.0.1+
+```
+
 After you have installed **_OCRapidnotes_**, you can run the _client_ and _server_ scripts by using `npm run client` and `npm run server`. In two different terminals, in the same directory as `package.json`, type:
 
 `Terminal 1:`
