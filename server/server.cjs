@@ -17,9 +17,7 @@ const PORT = process.env.PORT || 3000
 
 // OCR & Large Language Model (LLM) Clients
 const llm_client = new OpenAI({
-  apiKey:
-    process.env.OPENAI_APIKEY ||
-    "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",
+  apiKey: process.env.OPENAI_APIKEY || "learned my lesson",
 })
 const gvapi_client = new vision.ImageAnnotatorClient()
 
@@ -83,6 +81,7 @@ app.post("/scan", async (req, res) => {
 
   // PADDLEOCR
   if (req.body.type == "pocr") {
+    _a = Date.now()
     // Create Python Process
     // python pp_ocr.py filename.jpg
     const _process = spawn("python", [
@@ -92,6 +91,7 @@ app.post("/scan", async (req, res) => {
 
     // Wait For Output Text
     _process.stdout.on("data", (data) => {
+      console.log(Date.now() - _a)
       const output = Buffer.from(data)
         .toString("ascii")
         .replace(/[\r\n]+/gm, " ")
@@ -121,34 +121,88 @@ app.post("/filter", async (req, res) => {
   _message +=
     "Don't show another Filtered Output again. Don't say anything, just the output."
 
-  const completion = await llm_client.chat.completions.create({
-    messages: [
-      {
-        role: "system",
-        content: _message,
-      },
-      {
-        role: "user",
-        content: req.body.text,
-      },
-    ],
-    model: "gpt-3.5-turbo",
-  })
+  try {
+    const completion = await llm_client.chat.completions.create({
+      messages: [
+        {
+          role: "system",
+          content: _message,
+        },
+        {
+          role: "user",
+          content: req.body.text,
+        },
+      ],
+      model: "gpt-3.5-turbo",
+    })
 
-  // Send Filtered Output
-  res.send(completion.choices[0])
+    // Send Filtered Output
+    res.send(completion.choices[0])
+  } catch (error) {
+    // Handle No Connection
+    if (
+      error instanceof OpenAI.APIConnectionError ||
+      error instanceof OpenAI.APIConnectionTimeoutError
+    ) {
+      return res.sendStatus(522) // Connection Timed Out
+    } else if (error instanceof OpenAI.OpenAIError) {
+      return res.sendStatus(503) // Service Unavailable
+    }
+    console.log(error.response)
+  }
 })
 
 app.post("/format", async (req, res) => {
   // Check If Text To Format Exists
   if (req.body.text == "") return res.sendStatus(422) // Unprocessable Content
+  // Check If Preferences Was Sent
+  if (req.body.preferences == undefined) return res.sendStatus(422) // Unprocessable Content
+
+  const _preference = JSON.parse(req.body.preferences)
+
+  console.log("Title: ", _preference.title)
+  console.log("List: ", _preference.list)
+  console.log("Outline: ", _preference.outline)
+  console.log("Paraphrase: ", _preference.paraphrase)
+  console.log("Translate: ", _preference.translate)
+  console.log("Language: ", _preference.language)
+
+  let _message =
+    "Treat everything as notes. Format them to make it more understandable. "
+
+  // Title
+  if (_preference.title) {
+    _message +=
+      "Add a title to the formatted notes. It should be at the very start. "
+  }
+  // List
+  if (_preference.list) {
+    _message += "The notes should be in list form. "
+  }
+  // Outline
+  if (_preference.outline) {
+    _message += "The notes should be an outline of the original text."
+  }
+  // Paraphrase
+  if (_preference.paraphrase) {
+    _message +=
+      "The notes should be a paraphrased version of the original text."
+  }
+  // Translate
+  if (_preference.translate) {
+    _message += `You should translate the formatted notes into ${_preference.language}`
+  }
+
+  _message +=
+    "Do not add any extra content. You are not allowed to remove anything either."
+
+  console.log(_message)
 
   const completion = await llm_client.chat.completions.create({
     messages: [
       {
         role: "system",
-        content:
-          "Treat everything as notes. Format them to make it more understandable. Do not add any extra content.",
+        content: _message,
       },
       {
         role: "user",
