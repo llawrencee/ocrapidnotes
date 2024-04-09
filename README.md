@@ -24,7 +24,7 @@ The following are things that are to be implemented in the near future:
 
 - [x] User <font color="#6ea8fe">**Preference**</font> Tab
 - [x] Preferences Functionality
-- [] .md to .pdf
+- [ ] .md to .pdf
 
 ### Research
 
