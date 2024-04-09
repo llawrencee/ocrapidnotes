@@ -22,8 +22,9 @@ The following are things that are to be implemented in the near future:
 
 ### Client-Side
 
-- [ ] User <font color="#6ea8fe">**Preference**</font> Tab
-- [ ] Preferences Functionality
+- [x] User <font color="#6ea8fe">**Preference**</font> Tab
+- [x] Preferences Functionality
+- [] .md to .pdf
 
 ### Research
 
