@@ -8,7 +8,7 @@ This application provides a way to interface the following Optical Character Rec
 
 ## Project Status
 
-Currently, this project is still unfinished and is a work-in-progress build. As of now, this project is able to upload, scan, and format notes using only 2 out of the 3 OCR models (Tesseract & Google Vision API).
+Currently, this project is still unfinished and is a work-in-progress build. This project is able to upload, scan, and format notes using all 3 OCR models (Tesseract, Google Vision API, and PaddleOCR).
 
 ## Project Tasks
 
@@ -18,25 +18,19 @@ The following are things that are to be implemented in the near future:
 
 - [x] **PaddleOCR** Implementation
 - [x] Server Error Feedback (Special Cases)
-- [x] Format Preferences Prompt Handling
-- [ ] Handle Multiple Images
+- [ ] Format Preferences Prompt Handling
 
 ### Client-Side
 
 - [x] User <font color="#6ea8fe">**Preference**</font> Tab
 - [x] Preferences Functionality
 - [ ] .md to .pdf
-- [ ] Process Formatted Markdown
-- [ ] Scanning & Formatting Progress Bar
 
 ### Research
 
-- [x] Extensive <font color="#ffda6a">**Testing**</font>
-
+- Extensive <font color="#ffda6a">**Testing**</font>
   - [x] Needs google drive folder for images to test
-  - [x] Formatting and analyzation of data
-
-- [x] Finalize Paper
+  - [ ] Formatting and analyzation of data
 
 ## Installation
 
@@ -106,33 +100,5 @@ At this point you should see this screen:
 
 ![A webpage that contains the user interface for the upload section of the software prototype, OCRapidnotes. The components are made using React Bootstrap and Bootstrap CSS along with customized styling.](./doc/images/upload_none.png)
 
-In this upload pane, you can upload file that has an image mimetype of `image/*`. For this example, we are uploading a screenshot about the Le Man's 24 hour race.
-
-![](./doc/images/upload_screenshot.png)
-
 > [!NOTE]
-> It is required for you to confirm your selected image. As this is what lets the server know what image to use.
-
-Clicking `Scan` will allow you to set different scanning controls such as the OCR model, whether you want the output to be filtered, and whether you want to show the filtered characters.
-
-![](./doc/images/scan_none.png)
-
-For this image, we decided to use Google Vision API without filtering the output as our research found that filtering scanned texts doesn't really improve the accuracy that much. It only allows for a better copy to clipboard experience.
-
-![](./doc/images/scan_screenshot.png)
-
-Clicking `Format` will automatically format the scanned text using GPT. The following image is the loading screen.
-
-![](./doc/images/format_none.png)
-
-And this is the resulting formatted text.
-
-![](./doc/images/format_screenshot.png)
-
-> [!WARNING]
-> This software prototype also has the ability to set user preference. They are stored using website cookies so turning them off for this web application will inevitably remove user preferences.
-
-![](./doc/images/preferences.png)
-
-> [!NOTE]
-> There are server notifications in the program to automatically inform you of the status of the server. Most server errors now return their appropriate response codes.
+> There are server notifications in the program to automatically inform you of the status of the server. However, there are some instances when an error can occur without any indication to the user. This is also another thing to be [fixed](#server-side) in the near future.
